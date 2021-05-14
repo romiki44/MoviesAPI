@@ -13,6 +13,10 @@ namespace MoviesAPI
     {
         public static void Main(string[] args)
         {
+            // len priklad bez DI
+            // sice triedy su volne previazane, ale zavislosti vytvaraju neprijemnu retaz pri volani konstruktora!!
+            //var genresController=new GenresController(new InMemoryRepository(new Logger()))
+
             CreateHostBuilder(args).Build().Run();
         }
 
@@ -20,6 +24,8 @@ namespace MoviesAPI
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
+                    // moznost nakonfigurovat providera pre Logging service - to jest databaza, konzola a pod..!
+                    //webBuilder.ConfigureLogging()
                     webBuilder.UseStartup<Startup>();
                 });
     }
