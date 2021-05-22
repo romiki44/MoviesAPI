@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MoviesAPI.DTOs;
 using MoviesAPI.Entities;
 using System;
 using System.Collections.Generic;
@@ -16,47 +19,82 @@ namespace MoviesAPI.Controllers
     public class GenresController : ControllerBase
     {
         private readonly ILogger<GenresController> logger;
+        private readonly ApplicationDbContext context;
+        private readonly IMapper mapper;
 
-        public GenresController(ILogger<GenresController> logger)
+        public GenresController(ILogger<GenresController> logger, ApplicationDbContext context, IMapper mapper)
         {
             this.logger = logger;
+            this.context = context;
+            this.mapper = mapper;
         }
 
         [HttpGet] 
-        public async Task<ActionResult<List<Genre>>> Get()
+        public async Task<ActionResult<List<GenreDto>>> Get()
         {
-            await Task.Delay(300);
+            var genres=await context.Genres.OrderBy(g=>g.Name).ToListAsync();
 
-            return new List<Genre>
+            // manualne mapovanie na DTO -  nie dobry napad
+            /*var genresDTOs = new List<GenreDto>();
+            foreach(var genre in genres)
             {
-                new Genre() {Id=1, Name="Comedy"},
-                new Genre() {Id=2, Name="Action"}
-            };
+                genresDTOs.Add(new GenreDto() { Id = genre.Id, Name = genre.Name });
+            }
+            return genresDTOs; */
+
+            // mapovanie cez AutoMapper!
+            return mapper.Map<List<GenreDto>>(genres);
         }
 
         [HttpGet("{Id:int}")]
-        public ActionResult<Genre> Get(int id)
+        public async Task<ActionResult<GenreDto>> Get(int id)
         {
+            var genre = await context.Genres.FirstOrDefaultAsync(g => g.Id == id);
+            if (genre == null)
+                return NotFound();
 
-            throw new NotImplementedException();
+            return mapper.Map<GenreDto>(genre); 
         }
-
+         
         [HttpPost]
-        public ActionResult Post([FromBody] Genre genre)
+        public async Task<ActionResult> Post([FromBody] GenreCreationDto genreCreationDto)
         {
-            throw new NotImplementedException();
+            var genreDupl=await context.Genres.FirstOrDefaultAsync(g => g.Name == genreCreationDto.Name);
+            if (genreDupl != null)
+                return BadRequest("Duplicates values not allowed!");
+
+            var genre = mapper.Map<Genre>(genreCreationDto);
+
+            context.Genres.Add(genre);
+            await context.SaveChangesAsync();
+            return NoContent();
         }
 
-        [HttpPut]
-        public ActionResult Put([FromBody] Genre genre)
+        [HttpPut("{id:int}")]
+        public async Task<ActionResult> Put(int id, [FromBody] GenreCreationDto genreCreationDto)
         {
-            throw new NotImplementedException();
+            var genre = mapper.Map<Genre>(genreCreationDto);
+            genre.Id = id;
+            context.Entry(genre).State = EntityState.Modified;
+            await context.SaveChangesAsync();
+
+            return NoContent();
         }
 
-        [HttpDelete]
-        public ActionResult Delete()
+        [HttpDelete("{id:int}")]
+        public async Task<ActionResult> Delete(int id)
         {
-            throw new NotImplementedException();
+            var genre = await context.Genres.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (genre == null)
+                return NotFound();
+
+            context.Remove(genre);
+            await context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }
+
+
+

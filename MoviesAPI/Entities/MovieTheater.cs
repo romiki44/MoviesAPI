@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MoviesAPI.Validations;
+﻿using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -8,15 +7,13 @@ using System.Threading.Tasks;
 
 namespace MoviesAPI.Entities
 {
-    [Index(nameof(Name), IsUnique =true)]
-    public class Genre
+    public class MovieTheater
     {
         public int Id { get; set; }
 
         [Required]
-        [StringLength(50)]
-        [FirstLetterUppercase]
+        [StringLength(75)]
         public string Name { get; set; }
+        public Point Location { get; set; }
     }
-
 }
